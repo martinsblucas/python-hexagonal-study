@@ -1,6 +1,6 @@
 from uuid import UUID
 
-from app.adapters.inbound.rest.dependencies.core import StudentRepositoryDep
+from app.adapters.inbound.rest.dependencies.core import StudentUseCaseDep
 from app.adapters.inbound.rest.v1.models import (
     StudentV1Request,
     StudentV1Response,
@@ -15,8 +15,8 @@ router = APIRouter(prefix="/v1/students", tags=["students"])
 
 @router.get("/", response_model=list[StudentV1Response])
 @inject
-async def all(student_repository: StudentRepositoryDep):
-    students = await student_repository.all()
+async def all(student_use_case: StudentUseCaseDep):
+    students = await student_use_case.all()
     try:
         return [StudentV1Response.model_validate(student) for student in students]
 
@@ -28,10 +28,10 @@ async def all(student_repository: StudentRepositoryDep):
 @inject
 async def find(
     student_id: UUID,
-    student_repository: StudentRepositoryDep,
+    student_use_case: StudentUseCaseDep,
 ):
     try:
-        student = await student_repository.find(student_id=student_id)
+        student = await student_use_case.find(student_id=student_id)
         return StudentV1Response.model_validate(student)
 
     except NotFound as error:
@@ -44,10 +44,10 @@ async def find(
 @router.post("/", response_model=StudentV1Response)
 @inject
 async def create(
-    student_repository: StudentRepositoryDep, student_request: StudentV1Request
+    student_use_case: StudentUseCaseDep, student_request: StudentV1Request
 ):
     try:
-        student = await student_repository.create(
+        student = await student_use_case.create(
             student=StudentIn.model_validate(student_request)
         )
 
@@ -64,11 +64,11 @@ async def create(
 @inject
 async def update(
     student_id: UUID,
-    student_repository: StudentRepositoryDep,
+    student_use_case: StudentUseCaseDep,
     student_request: StudentV1Request,
 ):
     try:
-        student = await student_repository.update(
+        student = await student_use_case.update(
             student_id=student_id, student=StudentIn.model_validate(student_request)
         )
 
@@ -87,10 +87,10 @@ async def update(
 @inject
 async def delete(
     student_id: UUID,
-    student_repository: StudentRepositoryDep,
+    student_use_case: StudentUseCaseDep,
 ):
     try:
-        await student_repository.delete(student_id=student_id)
+        await student_use_case.delete(student_id=student_id)
         return None
 
     except NotFound as error:

@@ -26,13 +26,15 @@ Esse projeto é um simples CRUD de uma entidade chamada `Student`, cujo propósi
 │   ├── configs -->>  Configurações da aplicação
 │   │   ├── dependency_injection.py
 │   │   └── settings.py
-│   └── domain -->> Camada de Domínio (Core)
-│       ├── exceptions.py
-│       ├── models -->> Entidades/Objetos de Valor do domínio
-│       │   └── student.py
-│       └── ports -->> Definição de como o domínio interage com o exterior
-│           └── repositories
-│               └── student.py
+│   ├── domain -->> Camada de Domínio (Core)
+│   │   ├── exceptions.py
+│   │   ├── models -->> Entidades/Objetos de Valor do domínio
+│   │   │   └── student.py
+│   │   └── ports -->> Definição de como o domínio interage com o exterior
+│   │       └── repositories
+│   │           └── student.py
+│   └── use_cases -->> Camada de Casos de Uso
+│       └── student.py
 ├── infrastructure -->> Código e configurações de infraestrutura
 │   ├── alembic
 │   │   ├── env.py
@@ -49,8 +51,9 @@ Esse projeto é um simples CRUD de uma entidade chamada `Student`, cujo propósi
 
 **Resumo da Aplicação da Arquitetura Hexagonal**
 
-1.  **Centro (Hexágono):** `app/domain` contém a lógica pura e as interfaces (`ports`). Ele não sabe sobre FastAPI, SQLAlchemy ou qualquer detalhe externo.
-2.  **Adaptadores Inbound:** `app/adapters/inbound/rest` recebe requisições HTTP, usa os schemas (`v1/models`) para validar/formatar dados, e chama a lógica através das portas injetadas via `configs/dependency_injection.py`.
-3.  **Adaptadores Outbound:** `app/adapters/outbound/repositories/student.py` implementa a interface definida em `app/domain/ports/repositories/student.py`, usando o ORM (`app/adapters/outbound/orm`) para de fato interagir com o banco de dados.
-4.  **Configuração:** `app/configs` cuida de configurar tudo, inclusive a injeção das dependências.
-5. **Infraestrutura**: `infrastructure/alembic` contém as migrações do banco de dados e `infrastructure/run_dev.py` é um script para rodar a aplicação em modo de desenvolvimento.
+1.  **Centro (Core):** `app/domain` contém a lógica pura de negócio (entidades, objetos de valor) e as interfaces (`ports`) que definem como o domínio interage com o mundo exterior (ex: `ports/repositories`). Ele não depende de detalhes de infraestrutura como web frameworks ou bancos de dados.
+2.  **Camada de Casos de Uso:** `app/use_cases` orquestra os fluxos da aplicação. Cada caso de uso implementa uma funcionalidade específica (ex: criar um estudante, buscar estudantes), utilizando as entidades do domínio e interagindo com o exterior através das portas do domínio (ex: chamando métodos da porta de repositório). É chamado pelos adaptadores *inbound*.
+3.  **Adaptadores Inbound:** `app/adapters/inbound/rest` (neste exemplo, uma API REST com FastAPI) recebe comandos externos (requisições HTTP), valida e converte os dados de entrada (usando `v1/models`), e **chama os casos de uso apropriados (`app/use_cases`)** para executar a lógica da aplicação.
+4.  **Adaptadores Outbound:** `app/adapters/outbound/repositories/student.py` implementa a interface de repositório (`Port`) definida em `app/domain/ports/repositories/student.py`. Ele usa tecnologias específicas (como SQLAlchemy em `app/adapters/outbound/orm`) para interagir com sistemas externos (como o banco de dados). **É chamado pelos casos de uso através das portas do domínio.**
+5.  **Configuração e Injeção de Dependência:** `app/configs` configura a aplicação e gerencia a injeção de dependências, conectando as implementações concretas (adaptadores) às abstrações (portas) usadas pelos casos de uso e pelo domínio.
+6.  **Infraestrutura:** `infrastructure` contém código de suporte não relacionado diretamente à lógica da aplicação, como configurações de migração (`alembic`) e scripts para execução (`run_dev.py`).
